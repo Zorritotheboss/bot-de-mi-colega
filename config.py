@@ -1,97 +1,53 @@
-from MoodleClient import MoodleClient
+BOT_TOKEN = ''
+PV_USERS = ['FriendXfriendss']
+#Database
+USERS = {}
+def saveDB():
+    import os
+    name = 'database.udb'
+    dbfile = open(name,'w')
+    i = 0
+    for user in USERS:
+        separator = ''
+        if i < len(USERS)-1:
+            separator = '\n'
+        dbfile.write(user+'='+str(USERS[user]) + separator)
+        i+=1
+    dbfile.close()
 
-BOT_TOKEN = '5125060630:AAGBe_8gMULq_GTncneNvaZvIkZZL_taQRI'
-MAX_ZIP_SIZE = 100
-ACCES_USERS = ['ventaorosking''maikelmrojas']
-CREDENTIALS = {'username':'obysoft','password':'Obysoft2001@'}
-CACHE = {}
+def createUser(name):
+    import time
+    USERS[name] = {'moodle_host':'https://eduvirtual.uho.edu.cu/','moodle_repo_id':3,'moodle_user':'','moodle_password':'','isadmin':0,'zips':200}
 
-def getCache():
-    return CACHE[CREDENTIALS['username']]
-def saveCache(cache):
-    CACHE[CREDENTIALS['username']] = cache
+def getUser(name):
+    try:
+        return USERS[name]
+    except:
+        return None
 
-def appendAcc(acc):
-    txt = open('accounts.txt','r')
-    txtcontent = txt.read()
-    txt.close()
-    txt = open('accounts.txt','w')
-    txt.write(txtcontent+"\n{'username':'"+acc[0]+"','password':'"+acc[1]+"'}")
-    txt.close();
-    list = loadAccounts()
-    createAccountCache(list[-1])
+def saveDataUser(user,data):
+    USERS[user] = data
 
-def parsejson(json):
-        data = {}
-        tokens = str(json).replace('{','').replace('}','').split(',')
-        for t in tokens:
-            split = str(t).split(':',1)
-            data[str(split[0]).replace('"','')] = str(split[1]).replace('"','')
-        return data
-
-STEP_CCOUNT = 0
-
-def loadAccounts():
-    list = []
-    txt = open('accounts.txt','r')
-    alljson = txt.read()
-    txt.close()
-    jsonlist = alljson.replace("'",'"').split('\n')
-    for json in jsonlist:
-        list.append(parsejson(json))
-    return list
-
-def stepAccount():
-    global STEP_CCOUNT
-    global CREDENTIALS
-
-    list = loadAccounts()
-    listlen = len(list)
-    STEP_CCOUNT+=1
-    if STEP_CCOUNT>=listlen:
-        STEP_CCOUNT = 0
-    CREDENTIALS = list[STEP_CCOUNT]
-
-def isStep(file_size):
-    global CACHE
-    global CREDENTIALS
-    for c in CACHE:
-        moodle_cache = CACHE[c]
-        available_storage = moodle_cache['storage_size'] - moodle_cache['storage_current']
-        if available_storage>file_size:
-            CREDENTIALS = moodle_cache['credentials']
-            return True
+def isAdmin(user):
+    User = getUser(user)
+    if User:
+        return User['isadmin']==1
     return False
 
-def createAccountsCache():
-    global CACHE
-    accounts = loadAccounts()
-    for acc in accounts:
-        moodle = MoodleClient(acc['username'],acc['password'])
-        loged = moodle.login()
-        if loged:
-            userdata = moodle.getUserData()
-            file_list = moodle.getFiles()
-            storage_current = 0
-            for f in file_list:
-                storage_current += f['size']
-            CACHE[acc['username']] = {'userdata':userdata,'storage_size':1024*1024*1000,'storage_current':storage_current,'file_list':file_list,'credentials':acc}
-        else:
-            CACHE[acc['username']] = None
-    pass
+def loadDB():
+    import os
+    import json
+    name = 'database.udb'
+    dbfile = open(name,'r')
+    lines = dbfile.read().split('\n')
+    dbfile.close()
+    for lin in lines:
+        if lin == '':continue
+        tokens = lin.split('=')
+        user = tokens[0]
+        PV_USERS.append(user)
+        data = json.loads(str(tokens[1]).replace("'",'"'))
+        USERS[user] = data
 
-def createAccountCache(acc):
-        global CACHE
-        moodle = MoodleClient(acc['username'],acc['password'])
-        loged = moodle.login()
-        if loged:
-            userdata = moodle.getUserData()
-            file_list = moodle.getFiles()
-            storage_current = 0
-            for f in file_list:
-                storage_current += f['size']
-            CACHE[acc['username']] = {'userdata':userdata,'storage_size':1024*1024*1000,'storage_current':storage_current,'file_list':file_list,'credentials':acc}
-        else:
-            CACHE[acc['username']] = {'userdata':{},'storage_size':0,'storage_current':0,'file_list':[],'credentials':{}}
-
-#createAccountsCache();
+#load db to init
+loadDB()
